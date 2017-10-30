@@ -1,7 +1,7 @@
 # L
 
 ## Simple set notation in Kotlin
-Inspired by [medium post]([https://medium.com/@farolfo/list-comprehensions-in-java-230e6a9d3a0c]())
+Inspired by [medium post](https://medium.com/@farolfo/list-comprehensions-in-java-230e6a9d3a0c)
 
 ## Usage
 
