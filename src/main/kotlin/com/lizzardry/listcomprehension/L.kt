@@ -1,85 +1,58 @@
 package com.lizzardry.listcomprehension
 
-fun <T> List<T>.toL(): L1<T> {
-    return L1(this)
+import com.lizzardry.listcomprehension.zipper.NormalZipper
+import com.lizzardry.listcomprehension.zipper.Zipper
+
+fun <T: Comparable<T>> List<T>.L(zipper: Zipper<T>?=null): L1<T> {
+    val passingZipper = zipper ?:NormalZipper<T>()
+    return L1(this, passingZipper)
 }
 
 
-class L1<T>(private val x: List<T>){
+class L1<T: Comparable<T>>(private val x: List<T>, private val zipper: Zipper<T>){
     fun with(y: List<T>): L2<T> {
-        return L2(x, y)
+        return L2(x, y, zipper)
     }
 
     fun cond(cond:(T) -> (Boolean)): L1<T> {
-        return L1(x.filter(cond))
+        return L1(x.filter(cond), zipper)
+    }
+
+    fun get(): List<T> {
+        return x.sortedBy { it }
     }
 }
-class L2<T>(private val x: List<T>,
-            private val y: List<T>) {
+
+class L2<T: Comparable<T>>(private val x: List<T>,
+            private val y: List<T>,
+            private val zipper:Zipper<T>) {
     fun with(z: List<T>): L3<T> {
-        return L3(x, y, z)
+        return L3(x, y, z, zipper)
     }
 
     fun cond(cond:(x: T, y: T) -> (Boolean)): L2<T> {
-        val condResult =
-                x.zip(y).filter { cond(it.first, it.second) }.unzip()
-        x.zip(y).map { XY(it) }.filter { cond(it.x, it.y) }
-        return L2(condResult.first, condResult.second)
+        val zipped = zipper.separate(zipper.zip(x, y).filter { (x, y) -> cond(x, y) })
+        return L2(zipped.first, zipped.second, zipper)
     }
 
-    fun get(): List<Pair<T, T>> {
-        return x.zip(y)
-    }
-
-    private data
-    class XY<out T>(private val p: Pair<T, T>) {
-        val x = p.first
-        val y = p.second
+    fun get(): List<Zipper.XY<T>> {
+        return NormalZipper<T>().zip(x, y)
     }
 }
 
-class L3<T>(private val x: List<T>,
+class L3<T: Comparable<T>>(private val x: List<T>,
             private val y: List<T>,
-            private val z: List<T>) {
+            private val z: List<T>,
+            private val zipper: Zipper<T>) {
 
-    fun cond(cond:(x: T, y: T, z: T) -> (Boolean)): L3<T> {
-        val condResult =
-                x.zip(y).zips(z).map { XYZ(it) }.filter { cond(it.x, it.y, it.z) }.unzip()
-        return L3(condResult.first, condResult.second, condResult.third)
+    fun cond(cond: (x: T, y: T, z: T) -> (Boolean)): L3<T> {
+        val zipped = zipper.separate(zipper.zip(x, y, z).filter { (x, y, z) -> cond(x, y, z) })
+        return L3(zipped.first, zipped.second, zipped.third, zipper)
     }
 
-    fun get(): List<Triple<T, T, T>> {
-        return x.zip(y).zips(z)
-    }
-
-    private infix
-    fun List<Pair<T,T>>.zips(z: List<T>): List<Triple<T, T, T>> {
-        return this.zip(z).map { Triple(it.first.first, it.first.second, it.second) }
-    }
-
-    private
-    fun List<XYZ<T>>.unzip():Triple<List<T>, List<T>, List<T>> {
-        val expectedSize = collectionSizeOrDefault(10)
-        val list1 = ArrayList<T>(expectedSize)
-        val list2 = ArrayList<T>(expectedSize)
-        val list3 = ArrayList<T>(expectedSize)
-        for (triple in this) {
-            list1.add(triple.x)
-            list2.add(triple.y)
-            list3.add(triple.z)
-        }
-        return Triple(list1, list2, list3)
-    }
-
-    private
-    fun collectionSizeOrDefault(default: Int) =
-            if (this is Collection<*>) this.size else default
-
-
-    private data
-    class XYZ<out T>(private val p:Triple<T, T, T>) {
-        val x = p.first
-        val y = p.second
-        val z = p.third
+    fun get(): List<Zipper.XYZ<T>> {
+        return NormalZipper<T>().zip(x, y, z)
     }
 }
+
+
